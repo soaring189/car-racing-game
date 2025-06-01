@@ -52,12 +52,15 @@ def start_menu():
     image_refs = []
     label_frame = tk.Frame(root, width=150, height=200)
     label_frame.place(x=30, y=200)
-    tk.Label(label_frame, text="Lateral Speed", font=("Arial", 12, "bold")).place(
+    tk.Label(label_frame, text="Lateral Speed",
+             font=("Arial", 12, "bold")).place(
         x=10, y=70)
-    tk.Label(label_frame, text="Acceleration", font=("Arial", 12, "bold")).place(
+    tk.Label(label_frame, text="Acceleration",
+             font=("Arial", 12, "bold")).place(
         x=10, y=100)
-    tk.Label(label_frame, text="Max Speed", font=("Arial", 12, "bold")).place(x=10,
-                                                                              y=130)
+    tk.Label(label_frame, text="Max Speed", font=("Arial", 12, "bold")).place(
+        x=10,
+        y=130)
     for image_id, image_path in enumerate(car_images_tk):
         image = Image.open(image_path)
         image = image.resize((80, 160))
@@ -70,13 +73,16 @@ def start_menu():
         tk.Label(root, text=f"{int(car_attributes[image_id][0] * 10)}",
                  font=("Arial", 10),
                  justify="center", width=6).place(x=attr_x, y=270)
-        tk.Label(root, text=f"{car_attributes[image_id][1] * 10}", font=("Arial", 10),
+        tk.Label(root, text=f"{car_attributes[image_id][1] * 10}",
+                 font=("Arial", 10),
                  justify="center", width=6).place(x=attr_x, y=300)
         tk.Label(root, text=f"{int(car_attributes[image_id][2] * 10)}",
                  font=("Arial", 10),
                  justify="center", width=6).place(x=attr_x, y=330)
         btn = tk.Button(root, text="Choose",
-                        command=lambda index=image_id: select_car(index, car_index, buttons))
+                        command=lambda index=image_id: select_car(index,
+                                                                  car_index,
+                                                                  buttons))
         btn.place(x=img_x + 15, y=360)
         buttons.append(btn)
     buttons[0].config(bg="blue")
@@ -84,13 +90,25 @@ def start_menu():
     difficulty_x = 300
     difficulty_y = 430
     easy_btn = tk.Button(root, text="Easy", width=10,
-                         command=lambda: select_difficulty("Easy", challenge_level, easy_btn, normal_btn, hard_btn))
+                         command=lambda: select_difficulty("Easy",
+                                                           challenge_level,
+                                                           easy_btn,
+                                                           normal_btn,
+                                                           hard_btn))
     easy_btn.place(x=difficulty_x, y=difficulty_y)
     normal_btn = tk.Button(root, text="Normal", width=10,
-                           command=lambda: select_difficulty("Normal", challenge_level, easy_btn, normal_btn, hard_btn))
+                           command=lambda: select_difficulty("Normal",
+                                                             challenge_level,
+                                                             easy_btn,
+                                                             normal_btn,
+                                                             hard_btn))
     normal_btn.place(x=difficulty_x + 120, y=difficulty_y)
     hard_btn = tk.Button(root, text="Hard", width=10,
-                         command=lambda: select_difficulty("Hard", challenge_level, easy_btn, normal_btn, hard_btn))
+                         command=lambda: select_difficulty("Hard",
+                                                           challenge_level,
+                                                           easy_btn,
+                                                           normal_btn,
+                                                           hard_btn))
     hard_btn.place(x=difficulty_x + 240, y=difficulty_y)
     normal_btn.config(bg="yellow")
     start_btn = ttk.Button(root, text="Start Game", command=root.destroy,
@@ -239,68 +257,81 @@ class ObstacleCar:
         screen.blit(rotated_image, (self.x_pos_list[self.x_pos_num], self.y))
 
 
-def game_state(bg_speed, obstacle_car_speed):
-    global running, car
-    if game_over:
-        if score > high_score:
-            write_high_score(score)
-
+def game_state(bg_speed_current, obstacle_speed, is_game_over, player_score,
+               best_score, player_car, game_running,
+               current_obstacle_cars, current_bg):
+    if is_game_over:
+        if player_score > best_score:
+            write_high_score(player_score)
         game_screen.blit(game_over_image, (34.75, 363))
-        if car.y < 800:
-            car.y += bg_speed + obstacle_car_speed
-        bg_speed = max(0, bg_speed - 0.02)
-        if bg_speed == 0:
+        if player_car.y < 800:
+            player_car.y += bg_speed_current + obstacle_speed
+        bg_speed_current = max(0, bg_speed_current - 0.02)
+        if bg_speed_current == 0:
             game_screen.blit(restart_image, (111.25, 500))
             keys = p.key.get_pressed()
             if keys[p.K_r]:
-                reset_game()
+                is_game_over, player_score, best_score, player_car,\
+                    current_obstacle_cars, current_bg = \
+                    reset_game(player_score, best_score)
+                return bg_speed_current, game_running, player_score,\
+                    best_score, player_car, current_obstacle_cars,\
+                    current_bg, is_game_over
             if keys[p.K_q]:
-                running = False
-    return bg_speed
+                return bg_speed_current, False, player_score, best_score,\
+                    player_car, current_obstacle_cars, current_bg, is_game_over
+    return bg_speed_current, game_running, player_score, best_score, \
+        player_car, current_obstacle_cars, current_bg, is_game_over
 
 
-def reset_game():
-    global game_over, score, high_score, car, obstacle_cars, bg
-    game_over = False
-    if score > high_score:
-        high_score = score
-    score = 0
-    car = Car(260, 600, car_id, car_attributes[car_id][0],
-              car_attributes[car_id][1], car_attributes[car_id][2], car_images)
-    obstacle_cars = []
+def reset_game(current_score, current_high_score):
+    if current_score > current_high_score:
+        current_high_score = current_score
+    current_score = 0
+    player_car = Car(260, 600, car_id, car_attributes[car_id][0],
+                     car_attributes[car_id][1], car_attributes[car_id][2],
+                     car_images)
+    current_obstacle_cars = []
     for j in range(3):
         if j == 0:
-            obstacle_cars.append(ObstacleCar(car_images, []))
+            current_obstacle_cars.append(ObstacleCar(car_images, []))
         else:
-            obstacle_cars.append(ObstacleCar(car_images, obstacle_cars))
-    bg = Background(bg_images, scroll_speed)
+            current_obstacle_cars.append(
+                ObstacleCar(car_images, current_obstacle_cars))
+    current_bg = Background(bg_images, scroll_speed)
+    return False, current_score, current_high_score, player_car, \
+        current_obstacle_cars, current_bg
 
 
-def display_stats(speed, max_speed):
-    global needle_angle, distance, score
+def display_stats(speed, max_speed, current_distance, current_score,
+                  current_game_state, current_high_score,
+                  current_needle_angle):
     game_screen.blit(bg_images[2], (600, 0))
     game_screen.blit(speedometer_image, (600, 700))
     game_screen.blit(circle_image, (645, 745))
-    if not game_over:
-        needle_angle = 145 - 290 * (speed / max_speed)
+    if not current_game_state:
+        current_needle_angle = 145 - 290 * (speed / max_speed)
     else:
-        if needle_angle < 145:
-            needle_angle += 5
-    rotated_needle = p.transform.rotate(needle_image, needle_angle)
+        if current_needle_angle < 145:
+            current_needle_angle += 5
+    rotated_needle = p.transform.rotate(needle_image, current_needle_angle)
     rotated_rect = rotated_needle.get_rect(center=(650, 750))
     game_screen.blit(rotated_needle, rotated_rect.topleft)
-    if not game_over:
-        distance += 0.033 * scroll_speed
+    if not current_game_state:
+        current_distance += 0.033 * speed
     for n in range(4):
-        game_screen.blit(number_list[(int(distance) // (10 ** n)) % 10],
-                         (626, 375 - (n * 100)))
+        game_screen.blit(
+            number_list[(int(current_distance) // (10 ** n)) % 10],
+            (626, 375 - (n * 100)))
     game_screen.blit(m_image, (626, 475))
     for n in range(3):
-        game_screen.blit(small_number_list[(high_score // (10 ** n)) % 10],
-                         (670 - (n * 30), 600))
+        game_screen.blit(
+            small_number_list[(current_high_score // (10 ** n)) % 10],
+            (670 - (n * 30), 600))
     for n in range(3):
-        game_screen.blit(small_number_list[(score // (10 ** n)) % 10],
+        game_screen.blit(small_number_list[(current_score // (10 ** n)) % 10],
                          (670 - (n * 30), 650))
+    return current_distance, current_score
 
 
 car_id, difficulty = start_menu()
@@ -390,8 +421,11 @@ while running:
             if not obstacle_car.passed and not game_over:
                 score += difficulty_num
                 obstacle_car.passed = True
-    scroll_speed = game_state(scroll_speed, collide_car_speed)
-    display_stats(scroll_speed, car.max_speed)
+    scroll_speed, running, score, high_score, car, obstacle_cars, bg, game_over\
+        = game_state(scroll_speed, collide_car_speed, game_over, score,
+                     high_score, car, running, obstacle_cars, bg)
+    distance, score = display_stats(scroll_speed, car.max_speed, distance,
+                                    score, game_over, high_score, needle_angle)
     p.display.update()
     p.time.Clock().tick(FPS)
 p.quit()
